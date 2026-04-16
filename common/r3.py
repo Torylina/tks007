@@ -42,6 +42,18 @@ class R3:
             self.z * other.x - self.x * other.z,
             self.x * other.y - self.y * other.x)
 
+    # Сравнение векторов (для удаления дубликатов рёбер)
+    def __eq__(self, other):
+        if not isinstance(other, R3):
+            return False
+        return (abs(self.x - other.x) < 1e-9 and
+                abs(self.y - other.y) < 1e-9 and
+                abs(self.z - other.z) < 1e-9)
+
+    # Хеш для использования в множествах
+    def __hash__(self):
+        return hash((round(self.x, 9), round(self.y, 9), round(self.z, 9)))
+
 
 if __name__ == "__main__":  # pragma: no cover
     x = R3(1.0, 1.0, 1.0)
@@ -54,3 +66,4 @@ if __name__ == "__main__":  # pragma: no cover
     print("u", type(u), u)
     v = x.cross(y)
     print("v", type(v), v.__dict__)
+    
