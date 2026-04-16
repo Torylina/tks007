@@ -108,3 +108,48 @@ class TestR3(unittest.TestCase):
     def test_cross04(self):
         self.assertEqual(R3ApproxMatcher(self.a.cross(R3(3.0, -2.0, 1.0))),
                          R3(8.0, 8.0, -8.0))
+
+    def test_eq01(self):
+        """Тест сравнения равных точек"""
+        p1 = R3(1.0, 2.0, 3.0)
+        p2 = R3(1.0, 2.0, 3.0)
+        self.assertEqual(p1, p2)
+
+    def test_eq02(self):
+        """Тест сравнения неравных точек"""
+        p1 = R3(1.0, 2.0, 3.0)
+        p2 = R3(1.1, 2.0, 3.0)
+        self.assertNotEqual(p1, p2)
+
+    def test_eq03(self):
+        """Тест сравнения с объектом другого типа"""
+        p1 = R3(1.0, 2.0, 3.0)
+        self.assertNotEqual(p1, "not a point")
+
+    def test_eq04(self):
+        """Тест сравнения точек с малой разницей (в пределах погрешности)"""
+        p1 = R3(1.0, 2.0, 3.0)
+        p2 = R3(1.0000000001, 2.0, 3.0)
+        self.assertEqual(p1, p2)
+
+    def test_hash01(self):
+        """Тест хеша для равных точек"""
+        p1 = R3(1.0, 2.0, 3.0)
+        p2 = R3(1.0, 2.0, 3.0)
+        self.assertEqual(hash(p1), hash(p2))
+
+    def test_hash02(self):
+        """Тест хеша для неравных точек"""
+        p1 = R3(1.0, 2.0, 3.0)
+        p2 = R3(1.1, 2.0, 3.0)
+        self.assertNotEqual(hash(p1), hash(p2))
+
+    def test_hash03(self):
+        """Тест хеша для точек с малой разницей"""
+        p1 = R3(1.0, 2.0, 3.0)
+        p2 = R3(1.0000000001, 2.0, 3.0)
+        self.assertEqual(hash(p1), hash(p2))
+
+
+if __name__ == "__main__":  # pragma: no cover
+    unittest.main()
