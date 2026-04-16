@@ -134,6 +134,9 @@ class Polyedr:
         # списки вершин, рёбер и граней полиэдра
         self.vertexes, self.edges, self.facets = [], [], []
 
+        # множество для отслеживания уже добавленных рёбер
+        seen_edges = set()
+
         # список строк файла
         with open(file) as f:
             for i, line in enumerate(f):
@@ -159,9 +162,21 @@ class Polyedr:
                     size = int(buf.pop(0))
                     # массив вершин этой грани
                     vertexes = list(self.vertexes[int(n) - 1] for n in buf)
-                    # задание рёбер грани
+                    # задание рёбер грани (без дублирования)
                     for n in range(size):
-                        self.edges.append(Edge(vertexes[n - 1], vertexes[n]))
+                        v1 = vertexes[n - 1]
+                        v2 = vertexes[n]
+                        # Ключ для ребра (независимо от направления)
+                        key1 = (round(v1.x, 9), round(v1.y, 9),
+                                round(v1.z, 9), round(v2.x, 9),
+                                round(v2.y, 9), round(v2.z, 9))
+                        key2 = (round(v2.x, 9), round(v2.y, 9),
+                                round(v2.z, 9), round(v1.x, 9),
+                                round(v1.y, 9), round(v1.z, 9))
+                        # Добавляем ребро только если его ещё нет
+                        if key1 not in seen_edges and key2 not in seen_edges:
+                            seen_edges.add(key1)
+                            self.edges.append(Edge(v1, v2))
                     # задание самой грани
                     self.facets.append(Facet(vertexes))
 
@@ -195,3 +210,4 @@ class Polyedr:
         result = self.good_edges_length_sum()
         print(
             f"Сумма длин рёбер с «хорошими» концами и серединой: {result:.6f}")
+        print(f"Всего рёбер в полиэдре: {len(self.edges)}")
