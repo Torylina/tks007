@@ -38,8 +38,11 @@ class Edge:
     SBEG, SFIN = 0.0, 1.0
 
     # Параметры конструктора: начало и конец ребра (точки в R3)
-    def __init__(self, beg, fin):
+    def __init__(self, beg, fin, original_beg=None, original_fin=None):
         self.beg, self.fin = beg, fin
+        # Сохраняем оригинальные точки для вычисления длины
+        self.original_beg = original_beg if original_beg else beg
+        self.original_fin = original_fin if original_fin else fin
         # Список «просветов»
         self.gaps = [Segment(Edge.SBEG, Edge.SFIN)]
 
@@ -80,11 +83,11 @@ class Edge:
         x = - f0 / (f1 - f0)
         return Segment(Edge.SBEG, x) if f0 < 0.0 else Segment(x, Edge.SFIN)
 
-    # Длина ребра в пространстве
+    # Длина ребра в пространстве (вычисляется по оригинальным точкам)
     def length(self):
-        return sqrt((self.fin.x - self.beg.x)**2 +
-                    (self.fin.y - self.beg.y)**2 +
-                    (self.fin.z - self.beg.z)**2)
+        return sqrt((self.original_fin.x - self.original_beg.x)**2 +
+                    (self.original_fin.y - self.original_beg.y)**2 +
+                    (self.original_fin.z - self.original_beg.z)**2)
 
 
 class Facet:
@@ -134,6 +137,9 @@ class Polyedr:
         # списки вершин, рёбер и граней полиэдра
         self.vertexes, self.edges, self.facets = [], [], []
 
+        # списки оригинальных вершин (до преобразований)
+        self.original_vertexes = []
+
         # множество для отслеживания уже добавленных рёбер
         seen_edges = set()
 
@@ -153,19 +159,28 @@ class Polyedr:
                 elif i < nv + 2:
                     # задание всех вершин полиэдра
                     x, y, z = (float(x) for x in line.split())
-                    self.vertexes.append(R3(x, y, z).rz(
+                    # Сохраняем оригинальные вершины (без преобразований)
+                    original = R3(x, y, z)
+                    self.original_vertexes.append(original)
+                    # Сохраняем преобразованные вершины
+                    self.vertexes.append(original.rz(
                         alpha).ry(beta).rz(gamma) * c)
                 else:
                     # вспомогательный массив
                     buf = line.split()
                     # количество вершин очередной грани
                     size = int(buf.pop(0))
-                    # массив вершин этой грани
+                    # массив вершин этой грани (преобразованных)
                     vertexes = list(self.vertexes[int(n) - 1] for n in buf)
+                    # массив оригинальных вершин
+                    original_vertexes = list(
+                        self.original_vertexes[int(n) - 1] for n in buf)
                     # задание рёбер грани (без дублирования)
                     for n in range(size):
                         v1 = vertexes[n - 1]
                         v2 = vertexes[n]
+                        orig_v1 = original_vertexes[n - 1]
+                        orig_v2 = original_vertexes[n]
                         # Ключ для ребра (независимо от направления)
                         key1 = (round(v1.x, 9), round(v1.y, 9),
                                 round(v1.z, 9), round(v2.x, 9),
@@ -176,7 +191,7 @@ class Polyedr:
                         # Добавляем ребро только если его ещё нет
                         if key1 not in seen_edges and key2 not in seen_edges:
                             seen_edges.add(key1)
-                            self.edges.append(Edge(v1, v2))
+                            self.edges.append(Edge(v1, v2, orig_v1, orig_v2))
                     # задание самой грани
                     self.facets.append(Facet(vertexes))
 
@@ -188,14 +203,19 @@ class Polyedr:
     # Сумма длин рёбер, у которых середина и оба конца — «хорошие» точки
     def good_edges_length_sum(self):
         total = 0.0
+        total_all = 0.0
         for e in self.edges:
+            edge_len = e.length()
+            total_all += edge_len
             mid = R3((e.beg.x + e.fin.x) / 2,
                      (e.beg.y + e.fin.y) / 2,
                      (e.beg.z + e.fin.z) / 2)
             if (self.is_good_point(e.beg) and
                     self.is_good_point(e.fin) and
                     self.is_good_point(mid)):
-                total += e.length()
+                total += edge_len
+        # Проверка, что сумма не превышает общую сумму
+        assert total <= total_all + 1e-9
         return total
 
     # Метод изображения полиэдра
