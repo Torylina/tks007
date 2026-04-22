@@ -34,11 +34,9 @@ class Edge:
         self.beg, self.fin = beg, fin
         self.original_beg = original_beg if original_beg else beg
         self.original_fin = original_fin if original_fin else fin
-        # Предвычисляем середину
         self.mid = R3((beg.x + fin.x) / 2,
                       (beg.y + fin.y) / 2,
                       (beg.z + fin.z) / 2)
-        # Предвычисляем длину
         self._length = sqrt(
             (self.original_fin.x - self.original_beg.x)**2 +
             (self.original_fin.y - self.original_beg.y)**2 +
@@ -60,7 +58,7 @@ class Edge:
                 facet.vertexes[0], facet.h_normal()))
         if shade.is_degenerate():
             return
-        
+
         gaps = [s.subtraction(shade) for s in self.gaps]
         self.gaps = [
             s for s in reduce(add, gaps, []) if not s.is_degenerate()]
@@ -115,50 +113,44 @@ class Polyedr:
     def __init__(self, file):
         self.vertexes, self.edges, self.facets = [], [], []
         self.original_vertexes = []
-        self._good_point_cache = {}
-        
+
         with open(file) as f:
             lines = f.readlines()
-            
-        # Первая строка: коэффициент гомотетии и углы Эйлера
+
         buf = lines[0].split()
         c = float(buf.pop(0))
         alpha, beta, gamma = (float(x) * pi / 180.0 for x in buf)
-        
-        # Вторая строка: количество вершин, граней, рёбер
+
         nv, nf, ne = (int(x) for x in lines[1].split())
-        
-        # Чтение вершин
+
         for i in range(2, nv + 2):
             x, y, z = (float(val) for val in lines[i].split())
             original = R3(x, y, z)
             self.original_vertexes.append(original)
             self.vertexes.append(original.rz(alpha).ry(beta).rz(gamma) * c)
-        
-        # Чтение граней и создание рёбер
+
         seen_edges = set()
         for i in range(nv + 2, len(lines)):
             buf = lines[i].split()
             size = int(buf.pop(0))
             indices = [int(n) - 1 for n in buf]
-            
+
             vertexes = [self.vertexes[idx] for idx in indices]
             orig_vertexes = [self.original_vertexes[idx] for idx in indices]
-            
+
             for n in range(size):
                 v1, v2 = vertexes[n - 1], vertexes[n]
                 orig_v1, orig_v2 = orig_vertexes[n - 1], orig_vertexes[n]
-                
-                # frozenset для независимости от порядка
+
                 edge_key = frozenset([
                     (round(v1.x, 9), round(v1.y, 9), round(v1.z, 9)),
                     (round(v2.x, 9), round(v2.y, 9), round(v2.z, 9))
                 ])
-                
+
                 if edge_key not in seen_edges:
                     seen_edges.add(edge_key)
                     self.edges.append(Edge(v1, v2, orig_v1, orig_v2))
-            
+
             self.facets.append(Facet(vertexes))
 
     @staticmethod
@@ -169,8 +161,8 @@ class Polyedr:
         return sum(
             e.length() for e in self.edges
             if self.is_good_point(e.beg) and
-               self.is_good_point(e.fin) and
-               self.is_good_point(e.mid)
+            self.is_good_point(e.fin) and
+            self.is_good_point(e.mid)
         )
 
     def draw(self, tk):  # pragma: no cover
