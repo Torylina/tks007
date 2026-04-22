@@ -66,4 +66,3 @@ if __name__ == "__main__":  # pragma: no cover
     print("u", type(u), u)
     v = x.cross(y)
     print("v", type(v), v.__dict__)
-    
